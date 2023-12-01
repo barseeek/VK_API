@@ -1,5 +1,7 @@
 import requests
 from environs import Env
+import random
+from pathlib import Path
 
 
 def save_photo(url, filename, params={}):
@@ -69,8 +71,10 @@ def publish_photo_to_album(access_token, photo_id, owner_id, post_message):
 
 
 def main(access_token, group_id):
-    filename = 'python.png'
-    comics_response = requests.get("https://xkcd.com/353/info.0.json")
+    last_comics_num = requests.get("https://xkcd.com/info.0.json").json()["num"]
+    comics_num = random.randint(1, last_comics_num)
+    filename = '{0}.png'.format(comics_num)
+    comics_response = requests.get(f"https://xkcd.com/{comics_num}/info.0.json")
     save_photo(comics_response.json()['img'], filename)
     upload_url = get_upload_url(access_token, group_id)
     photo_data = upload_photo(upload_url, filename)
@@ -79,12 +83,13 @@ def main(access_token, group_id):
         photo_data,
         group_id
     )
-    print(publish_photo_to_album(
+    publish_photo_to_album(
         access_token,
         photo_id,
         owner_id,
         comics_response.json()['alt']
-    ))
+    )
+    Path.unlink(filename)
 
 
 if __name__ == '__main__':
