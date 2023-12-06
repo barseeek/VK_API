@@ -12,19 +12,19 @@ def check_vk_exception(decoded_response):
         )
 
 
-def download_random_comics():
+def download_random_comic():
     response = requests.get("https://xkcd.com/info.0.json")
     response.raise_for_status()
-    comics_num = random.randint(1, response.json()["num"])
-    filename = '{0}.png'.format(comics_num)
-    comics_response = requests.get(f"https://xkcd.com/{comics_num}/info.0.json")
-    comics_response.raise_for_status()
-    decoded_comics_response = comics_response.json()
-    response = requests.get(decoded_comics_response['img'])
+    comic_num = random.randint(1, response.json()["num"])
+    filename = '{0}.png'.format(comic_num)
+    comic_response = requests.get(f"https://xkcd.com/{comic_num}/info.0.json")
+    comic_response.raise_for_status()
+    decoded_comic_response = comic_response.json()
+    response = requests.get(decoded_comic_response['img'])
     response.raise_for_status()
     with open(filename, 'wb') as file:
         file.write(response.content)
-    return filename, decoded_comics_response
+    return filename, decoded_comic_response
 
 
 def upload_photo(url, filename):
@@ -54,12 +54,12 @@ def get_upload_url(access_token, group_id):
     return decoded_response.get("response").get("upload_url")
 
 
-def save_photo_to_album(access_token, group_id, photo, hash, server):
+def save_photo_to_album(access_token, group_id, photo, photo_hash, server):
     headers = {'Authorization': f'Bearer {access_token}'}
     params = {
         'photo': photo,
         'group_id': group_id,
-        'hash': hash,
+        'hash': photo_hash,
         'server': server,
         'v': '5.199'
     }
@@ -95,6 +95,7 @@ def publish_photo_to_album(
         headers=headers,
         params=params
     )
+    response.raise_for_status()
     decoded_response = response.json()
     check_vk_exception(decoded_response)
     return decoded_response
@@ -106,7 +107,7 @@ def main():
         env.read_env()
         vk_group_id = env.int("VK_GROUP_ID")
         vk_access_token = env.str("VK_ACCESS_TOKEN")
-        filename, decoded_comics_response = download_random_comics()
+        filename, decoded_comic_response = download_random_comic()
         upload_url = get_upload_url(vk_access_token, vk_group_id)
         photo_params = upload_photo(upload_url, filename)
         photo_id, owner_id = save_photo_to_album(
@@ -121,7 +122,7 @@ def main():
             vk_group_id,
             photo_id,
             owner_id,
-            decoded_comics_response['alt']
+            decoded_comic_response['alt']
         )
     finally:
         Path.unlink(filename)
